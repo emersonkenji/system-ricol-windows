@@ -27,13 +27,8 @@ services:
     volumes:
       - './system:/var/www/html:cached'
       # - './config/php-fpm/docker-php-ext-xdebug.ini:/etc/php/8.2/fpm/conf.d/docker-php-ext-xdebug.ini:cached'
-      - 'wplocaldockerCache:/var/www/.wp-cli/cache:cached'
       - '~/.ssh:/home/<USER_NAME>/.ssh:cached'
-      # - '/home/kenji/.wpsnapshots:/home/kenji/.wpsnapshots:cached'
       - '~/.aws:/home/<USER_NAME>/.aws:cached,ro'
-      - './config/php-fpm/wp-cli.local.yml:/var/www/.wp-cli/config.yml:cached'
-    # cap_add:
-    #   - SYS_PTRACE
     environment:
       - PHP_OPCACHE_VALIDATE_TIMESTAMPS=1 
       # ENABLE_XDEBUG: 'true'

@@ -1,33 +1,5 @@
 version: '3.8'
 services:
-  wordpress:
-    image: wordpress:6.4-fpm-alpine
-    # deploy:
-    #   mode: replicated
-    #   replicas: 1
-    #   update_config:
-    #     parallelism: 1
-    #     delay: 5s
-    #     order: start-first
-    #   restart_policy:
-    #     condition: on-failure
-    #     delay: 5s
-    #     max_attempts: 3
-    environment:
-      WORDPRESS_DB_HOST: global-mariadb
-      WORDPRESS_DB_USER: wordpress
-      WORDPRESS_DB_PASSWORD: wordpress
-      WORDPRESS_DB_NAME: wordpress
-      WORDPRESS_TABLE_PREFIX: wp_
-      WORDPRESS_CONFIG_EXTRA: |
-        define('WP_CACHE', true);
-        define('WP_HOME','https://${SITE_URL}');
-        define('WP_SITEURL','https://${SITE_URL}');
-    # user: "82:82"
-    volumes:
-      - ./system:/var/www/html
-    networks:
-      - reverse-proxy
 
   nginx:
     image: 'nginx:1.25-alpine'
@@ -67,6 +39,7 @@ services:
       - PHP_OPCACHE_VALIDATE_TIMESTAMPS=1 
       # ENABLE_XDEBUG: 'true'
       # PHP_IDE_CONFIG: serverName=negocios-test
+    user: "1000:1000"
     build:
       dockerfile: php-fpm
       context: .containers
