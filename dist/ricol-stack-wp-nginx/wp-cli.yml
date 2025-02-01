@@ -1,1 +1,0 @@
-ssh: 'docker-compose:phpfpm'
