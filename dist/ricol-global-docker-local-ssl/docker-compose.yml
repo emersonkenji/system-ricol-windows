@@ -1,0 +1,74 @@
+version: '3'
+
+services:
+  reverse-proxy:
+    image: traefik:v2.10
+    container_name: global-traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      # Web
+      - 8088:80
+      - 443:443
+      - 8080:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Map the static configuration into the container
+      - ./config/static.yml:/etc/traefik/traefik.yml:ro
+      # Map the dynamic configuration into the container
+      - ./config/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      # Map the certificats into the container
+      - ./certs:/etc/certs:ro
+    networks:
+      - reverse-proxy
+
+  mariadb:
+    image: mariadb:10.6
+    container_name: global-mariadb
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    # deploy:
+    #   mode: replicated
+    #   replicas: 1
+    #   placement:
+    #     constraints:
+    #       - node.role == manager
+    #   restart_policy:
+    #     condition: on-failure
+    #     delay: 5s
+    #     max_attempts: 3
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      # - backend
+      - reverse-proxy
+
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: global-phpmyadmin
+    ports:
+      - 8092:80
+    depends_on:
+      - mariadb
+    environment:
+      PMA_HOST: mariadb
+    networks:
+      - reverse-proxy
+
+networks:
+  reverse-proxy:
+    external: true
+
+
+# comando mkcert
+# mkcert -cert-file certs/localhost-cert.pem -key-file certs/localhost-key.pem "*.docker.localhost" "*.local" "*.test"
+
+volumes:
+  mysql_data:
