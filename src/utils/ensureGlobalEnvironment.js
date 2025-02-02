@@ -17,26 +17,26 @@ async function ensureGlobalEnvironment() {
   }
 }
 // Função auxiliar para criar banco de dados Laravel
-async function createDatabase(dbName) {
+async function createWordpressDatabase(dbName) {
   await ensureGlobalEnvironment();
-  console.log('\nCriando banco de dados Laravel...');
+  console.log('\nCriando banco de dados WordPress...');
   const safeDbName = `\`${dbName}\``;
   try {
     // Cria o banco de dados
     execSync(`docker exec global-mariadb mysql -uroot -proot -e 'CREATE DATABASE IF NOT EXISTS ${safeDbName}'`);
     
-    // Cria o usuário laravel se não existir e define a senha
-    execSync(`docker exec global-mariadb mysql -uroot -proot -e "CREATE USER IF NOT EXISTS 'laravel'@'%' IDENTIFIED BY 'laravel'"`);
+    // Cria o usuário wordpress se não existir
+    execSync(`docker exec global-mariadb mysql -uroot -proot -e "CREATE USER IF NOT EXISTS 'wordpress'@'%' IDENTIFIED BY 'wordpress'"`);
     
     // Concede privilégios ao usuário
-    execSync(`docker exec global-mariadb mysql -uroot -proot -e 'GRANT ALL PRIVILEGES ON ${safeDbName}.* TO "laravel"@"%"'`);
+    execSync(`docker exec global-mariadb mysql -uroot -proot -e 'GRANT ALL PRIVILEGES ON ${safeDbName}.* TO "wordpress"@"%"'`);
     
     // Atualiza privilégios
     execSync(`docker exec global-mariadb mysql -uroot -proot -e "FLUSH PRIVILEGES"`);
     
     console.log(`Banco de dados ${dbName} criado com sucesso!`);
   } catch (error) {
-    throw new Error(`Erro ao criar banco de dados Laravel: ${error.message}`);
+    throw new Error(`Erro ao criar banco de dados WordPress: ${error.message}`);
   }
 }
 
@@ -102,7 +102,7 @@ async function createLaravelDatabase(dbName) {
 
 module.exports = {
   ensureGlobalEnvironment, 
-  createDatabase, 
+  createWordpressDatabase, 
   startContainers, 
   createLaravelDatabase
 };

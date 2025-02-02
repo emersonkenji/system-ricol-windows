@@ -1,8 +1,22 @@
 http:
+  middlewares:
+    security-headers:
+      headers:
+        frameDeny: true
+        sslRedirect: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+
   routers:
     traefik:
       rule: "Host(`traefik.docker.localhost`)"
       service: "api@internal"
+      middlewares:
+        - security-headers  # Aplicar middleware de segurança
       tls:
         domains:
           - main: "docker.localhost"

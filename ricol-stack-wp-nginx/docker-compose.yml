@@ -1,8 +1,8 @@
-version: '3.8'
 services:
 
   nginx:
     image: 'nginx:1.25-alpine'
+    container_name: <SITE_NAME>-nginx
     expose:
       - '80'
       - '443'
@@ -10,6 +10,11 @@ services:
       - phpfpm
     networks:
       - reverse-proxy
+    # environment:
+    #   WORDPRESS_DB_HOST: mariadb
+    #   WORDPRESS_DB_NAME: wordpress_site1
+    #   WORDPRESS_DB_USER: wordpress_site1
+    #   WORDPRESS_DB_PASSWORD: wordpress_site1
     volumes:
       - './system:/var/www/html:cached'
       - './config/nginx/server.conf:/etc/nginx/conf.d/common/_server.conf:cached'
@@ -17,26 +22,25 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=reverse-proxy"
-      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${SITE_URL}`)"
-      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.tls=true"
-      - "traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80"  
+      - "traefik.http.routers.<labels>.rule=Host(`<SITE_URL>`)"
+      - "traefik.http.routers.<labels>.tls=true"
+      - "traefik.http.services.<labels>.loadbalancer.server.port=80"  
+      - "traefik.http.routers.<labels>.middlewares=<labels>-prefix"
+      - "traefik.http.middlewares.<labels>-prefix.stripprefix.prefixes=/<labels>"
     
   phpfpm:
     image: <PHP_IMAGE>-<USER_NAME>
+    container_name: <SITE_NAME>-phpfpm
     networks:
       - reverse-proxy
     volumes:
       - './system:/var/www/html:cached'
-      # - './config/php-fpm/docker-php-ext-xdebug.ini:/etc/php/8.2/fpm/conf.d/docker-php-ext-xdebug.ini:cached'
-      - 'wplocaldockerCache:/var/www/.wp-cli/cache:cached'
-      - '~/.ssh:/home/<USER_NAME>/.ssh:cached'
-      # - '/home/kenji/.wpsnapshots:/home/kenji/.wpsnapshots:cached'
-      - '~/.aws:/home/<USER_NAME>/.aws:cached,ro'
       - './config/php-fpm/wp-cli.local.yml:/var/www/.wp-cli/config.yml:cached'
+      # - './config/php-fpm/docker-php-ext-xdebug.ini:/etc/php/8.2/fpm/conf.d/docker-php-ext-xdebug.ini:cached'
     # cap_add:
     #   - SYS_PTRACE
     environment:
-      - PHP_OPCACHE_VALIDATE_TIMESTAMPS=1 
+      - PHP_OPCACHE_VALIDATE_TIMESTAMPS=0 
       # ENABLE_XDEBUG: 'true'
       # PHP_IDE_CONFIG: serverName=negocios-test
     user: "1000:1000"
@@ -49,8 +53,4 @@ services:
         CALLING_UID: 1000
 networks:
   reverse-proxy:
-    external: true
-volumes:
-  wplocaldockerCache:
-    name: wplocaldockerCache
     external: true

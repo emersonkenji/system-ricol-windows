@@ -2,7 +2,7 @@ const inquirer = require('inquirer');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const { createDatabase, startContainers, createLaravelDatabase } = require('../utils/ensureGlobalEnvironment');
+const { startContainers, createLaravelDatabase, createWordpressDatabase } = require('../utils/ensureGlobalEnvironment');
 const { ensureWPCLI, setupWordPress } = require('../utils/wp-cli');
 
 const create = async () => {
@@ -94,21 +94,24 @@ const create = async () => {
     fs.writeFileSync(path.join(projectPath, '.env'), envContent);
 
     if (projectType === 'wordpress') {
-      
+
       // WordPress specific setup
       const dbName = `wp_${composeProjectName}`;
       const dockerComposePath = path.join(projectPath, 'docker-compose.yml');
       let dockerConfig = fs.readFileSync(dockerComposePath, 'utf8');
       dockerConfig = dockerConfig
-        .replace(/WORDPRESS_DB_NAME: wordpress/, `WORDPRESS_DB_NAME: ${dbName}`)
+        // .replace(/WORDPRESS_DB_NAME: wordpress/, `WORDPRESS_DB_NAME: ${dbName}`)
+        .replace(/<labels>/g, composeProjectName)
+        .replace(/<SITE_NAME>/g, composeProjectName)
+        .replace(/<SITE_URL>/g, projectUrl)
         .replace(/<USER_NAME>/g, userName)
         .replace(/<PHP_IMAGE>/g, phpVersion);
       fs.writeFileSync(dockerComposePath, dockerConfig);
 
       // New WordPress setup steps
       await ensureWPCLI();
-      await setupWordPress(projectPath, dbName, composeProjectName);
-      await createDatabase(dbName);
+      await setupWordPress(projectPath, dbName, composeProjectName, projectUrl);
+      await createWordpressDatabase(dbName);
     } else {
       // Configuração do Laravel
       const dbName = `laravel_${composeProjectName}`;
@@ -120,7 +123,7 @@ const create = async () => {
       // Atualiza apenas as labels do Traefik
       dockerConfig = dockerConfig
         .replace(/<labels>/g, composeProjectName)
-        .replace(/example\.localhost/g, projectUrl)
+        .replace(/<SITE_URL>/g, projectUrl)
         .replace(/<USER_NAME>/g, userName)
         .replace(/<PHP_IMAGE>/g, phpVersion);
 

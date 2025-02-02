@@ -39,16 +39,15 @@ services:
     #     max_attempts: 3
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: wordpress
-      MYSQL_USER: wordpress
-      MYSQL_PASSWORD: wordpress
+      # MYSQL_DATABASE: wordpress
+      # MYSQL_USER: wordpress
+      # MYSQL_PASSWORD: wordpress
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
       - "3306:3306"
     networks:
-      reverse-proxy:
-        ipv4_address: 10.0.0.2
+      - reverse-proxy
 
   phpmyadmin:
     image: phpmyadmin

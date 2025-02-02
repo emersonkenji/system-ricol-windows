@@ -13,12 +13,6 @@ USER root
 # RUN chown ${CALLING_USER} /run/php-fpm
 
 # Install WP-CLI
-RUN apt-get update && apt-get install -y wget curl lsb-release gnupg
-RUN curl -fsSL https://wp-cli.org/packages/pub.key | gpg --dearmor > wp-cli.gpg
-RUN mv wp-cli.gpg /usr/share/keyrings/wp-cli.gpg
-RUN echo "deb [signed-by=/usr/share/keyrings/wp-cli.gpg] https://packages.wp-cli.org/ deb stable main" > /etc/apt/sources.list.d/wp-cli.list
-RUN apt-get update && apt-get install -y wpcli
-
 
 # Check files before changing ownership
 RUN [ -e /var/log/php-fpm.log ] && chown www-data /var/log/php-fpm.log || echo "Log não encontrado"
