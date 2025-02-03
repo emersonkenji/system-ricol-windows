@@ -4,7 +4,7 @@ services:
 
   nginx:
     image: 'nginx:1.25-alpine'
-    container_name: <labels>-nginx
+    container_name: <SITE_NAME>-nginx
     expose:
       - '80'
       - '443'
@@ -12,7 +12,7 @@ services:
       - phpfpm
     networks:
       - reverse-proxy
-      - <labels>-net
+      - <SITE_NAME>-net
     environment:
       - NGINX_HOST=<SITE_URL>
       - SITE_ID=<labels>
@@ -39,9 +39,9 @@ services:
         CALLING_USER: <USER_NAME>
         CALLING_UID: 1000
     image: <PHP_IMAGE>-<USER_NAME>
-    container_name: <labels>-phpfpm
+    container_name: <SITE_NAME>-phpfpm
     networks:
-      - <labels>-net
+      - <SITE_NAME>-net
       - public_network
     volumes:
       - './system:/var/www/html'
@@ -55,7 +55,7 @@ networks:
   reverse-proxy:
     external: true
     name: reverse-proxy
-  <labels>-net:
+  <SITE_NAME>-net:
     driver: bridge
   public_network:
     external: true

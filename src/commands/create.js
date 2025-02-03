@@ -84,6 +84,7 @@ const create = async () => {
       console.error(`Projeto ${projectName} já existe em ${meusSitesPath}`);
       process.exit(1);
     }
+    const labels = `${composeProjectName}dev`;
 
     const templatePath = projectType === 'wordpress' ? wpTemplatePath : laravelTemplatePath;
 
@@ -103,7 +104,7 @@ const create = async () => {
       let dockerConfig = fs.readFileSync(dockerComposePath, 'utf8');
       dockerConfig = dockerConfig
         .replace(/WORDPRESS_DB_NAME: wordpress/, `WORDPRESS_DB_NAME: ${dbName}`)
-        .replace(/<labels>/g, composeProjectName)
+        .replace(/<labels>/g, labels)
         .replace(/<SITE_NAME>/g, composeProjectName)
         .replace(/<SITE_URL>/g, projectUrl)
         .replace(/<USER_NAME>/g, userName)
