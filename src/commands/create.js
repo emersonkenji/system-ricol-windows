@@ -74,7 +74,7 @@ const create = async () => {
 
     const projectName = projectUrl.replace(/\.(dev.localhost|dev.local|dev.test)$/, '');
     const projectPath = path.join(meusSitesPath, projectName);
-    const defaultConfPath = path.join(projectPath, '.containers');
+    const defaultConfPath = path.join(projectPath, 'config/nginx');
     const composeProjectName = projectName
       .toLowerCase()
       .replace(/\./g, '-')
