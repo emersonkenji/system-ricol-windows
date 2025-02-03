@@ -132,6 +132,7 @@ const create = async () => {
       // Atualiza apenas as labels do Traefik
       dockerConfig = dockerConfig
         .replace(/<labels>/g, composeProjectName)
+        .replace(/<SITE_NAME>/g, composeProjectName)
         .replace(/<SITE_URL>/g, projectUrl)
         .replace(/<USER_NAME>/g, userName)
         .replace(/<PHP_IMAGE>/g, phpVersion);
