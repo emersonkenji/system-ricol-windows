@@ -17,7 +17,7 @@ services:
       - NGINX_HOST=<SITE_URL>
       - SITE_ID=<labels>
     volumes:
-      - './system:/var/www/html'
+      - './laravel:/var/www/html'
       - './config/nginx/server.conf:/etc/nginx/conf.d/common/_server.conf:ro'
       - './config/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro'
     labels:
@@ -44,7 +44,7 @@ services:
       - <SITE_NAME>-net
       - public_network
     volumes:
-      - './system:/var/www/html'
+      - './laravel:/var/www/html'
       - './config/php-fpm/wp-cli.local.yml:/var/www/.wp-cli/config.yml:ro'
     environment:
       - PHP_OPCACHE_VALIDATE_TIMESTAMPS=1 

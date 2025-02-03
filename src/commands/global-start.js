@@ -38,7 +38,7 @@ const globalStart = async () => {
       console.log('Rede public_network já existe.');
     } catch (error) {
       console.log('Criando rede public_network...');
-      execSync('docker network create public_network');
+      execSync('docker network create --subnet=10.0.0.0/24 --gateway=10.0.0.1 public_network');
       console.log('Rede public_network criada com sucesso.');
     }
 

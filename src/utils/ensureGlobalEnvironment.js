@@ -70,6 +70,7 @@ async function startContainers(projectPath, projectUrl, composeProjectName, proj
     console.log('\nTodos os containers foram iniciados com sucesso!');
     console.log('\nStatus dos containers:');
     console.log(containersStatus);
+    console.log(`\nAcesse seu projeto em: ${projectPath} e faça as instalações e configurações necessárias.`);
     console.log(`\nSeu site está disponível em: https://${projectUrl}`);
   } catch (error) {
     throw new Error(`Erro ao iniciar os containers: ${error.message}`);
@@ -80,20 +81,25 @@ async function startContainers(projectPath, projectUrl, composeProjectName, proj
 async function createLaravelDatabase(dbName) {
   await ensureGlobalEnvironment();
   console.log('\nCriando banco de dados Laravel...');
+
+  // Escapa o nome do banco de dados para garantir que ele seja seguro para o shell
   const safeDbName = `\`${dbName}\``;
+  const safeUser = 'laravel';
+  const safePassword = 'laravel';
+
   try {
-    // Cria o banco de dados
+    // Cria o banco de dados, se não existir
     execSync(`docker exec global-mariadb mysql -uroot -proot -e 'CREATE DATABASE IF NOT EXISTS ${safeDbName}'`);
-    
-    // Cria o usuário laravel se não existir e define a senha
-    execSync(`docker exec global-mariadb mysql -uroot -proot -e "CREATE USER IF NOT EXISTS 'laravel'@'%' IDENTIFIED BY 'laravel'"`);
-    
-    // Concede privilégios ao usuário
-    execSync(`docker exec global-mariadb mysql -uroot -proot -e 'GRANT ALL PRIVILEGES ON ${safeDbName}.* TO "laravel"@"%"'`);
-    
+
+    // Cria o usuário Laravel, se não existir
+    execSync(`docker exec global-mariadb mysql -uroot -proot -e "CREATE USER IF NOT EXISTS '${safeUser}'@'%' IDENTIFIED BY '${safePassword}'"`);
+
+    // Concede privilégios ao usuário para o banco de dados
+    execSync(`docker exec global-mariadb mysql -uroot -proot -e 'GRANT ALL PRIVILEGES ON ${safeDbName}.* TO "${safeUser}"@"%"'`);
+
     // Atualiza privilégios
     execSync(`docker exec global-mariadb mysql -uroot -proot -e "FLUSH PRIVILEGES"`);
-    
+
     console.log(`Banco de dados ${dbName} criado com sucesso!`);
   } catch (error) {
     throw new Error(`Erro ao criar banco de dados Laravel: ${error.message}`);

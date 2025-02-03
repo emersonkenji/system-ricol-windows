@@ -4,6 +4,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 const { startContainers, createLaravelDatabase, createWordpressDatabase } = require('../utils/ensureGlobalEnvironment');
 const { ensureWPCLI, setupWordPress } = require('../utils/wp-cli');
+const { configureLaravelProject, configureEnv, bootstrappingProject } = require('../utils/laravel-installer');
 
 const create = async () => {
   const userDir = require('os').homedir();
@@ -74,6 +75,9 @@ const create = async () => {
 
     const projectName = projectUrl.replace(/\.(dev.localhost|dev.local|dev.test)$/, '');
     const projectPath = path.join(meusSitesPath, projectName);
+    // console.log(projectPath);
+    //   process.exit(1);
+
     const defaultConfPath = path.join(projectPath, 'config/nginx');
     const composeProjectName = projectName
       .toLowerCase()
@@ -89,13 +93,14 @@ const create = async () => {
     const templatePath = projectType === 'wordpress' ? wpTemplatePath : laravelTemplatePath;
 
     console.log('Copiando template...');
+
     execSync(`cp -r "${templatePath}" "${projectPath}"`);
     execSync(`chmod -R 755 "${projectPath}"`);
 
-    const envContent = `SITE_URL=${projectUrl}\nCOMPOSE_PROJECT_NAME=${composeProjectName}`;
-    fs.writeFileSync(path.join(projectPath, '.env'), envContent);
-
     if (projectType === 'wordpress') {
+
+      const envContent = `SITE_URL=${projectUrl}\nCOMPOSE_PROJECT_NAME=${composeProjectName}`;
+      fs.writeFileSync(path.join(projectPath, '.env'), envContent);
 
       // WordPress specific setup
       const dbName = `wp_${composeProjectName}`;
@@ -122,10 +127,11 @@ const create = async () => {
       await setupWordPress(projectPath, dbName, composeProjectName, projectUrl);
       await createWordpressDatabase(dbName);
     } else {
-      // Configuração do Laravel
+
       const dbName = `laravel_${composeProjectName}`;
 
       // Configura o docker-compose.yml
+      console.log('Configurando docker-compose.yml...');
       const dockerComposePath = path.join(projectPath, 'docker-compose.yml');
       let dockerConfig = fs.readFileSync(dockerComposePath, 'utf8');
 
@@ -138,6 +144,8 @@ const create = async () => {
         .replace(/<PHP_IMAGE>/g, phpVersion);
 
       fs.writeFileSync(dockerComposePath, dockerConfig);
+
+      console.log('Configurando default.conf...');
       // ajusta o arquivo default.conf
       const defaultConf = path.join(defaultConfPath, 'default.conf');
       let defaultConfContent = fs.readFileSync(defaultConf, 'utf8');
@@ -145,16 +153,24 @@ const create = async () => {
       fs.writeFileSync(defaultConf, defaultConfContent);
 
       // Cria a pasta system
-      const systemPath = path.join(projectPath, 'system');
-      fs.mkdirSync(systemPath, { recursive: true });
+      // const systemPath = path.join(projectPath, 'system');
+      // fs.mkdirSync(systemPath, { recursive: true });
 
+      console.log('Criando banco de dados Laravel...');
       // Cria o banco de dados para Laravel
       await createLaravelDatabase(dbName);
+
+      // Configura o projeto Laravel
+      console.log('Configurando projeto Laravel...');
+      await configureLaravelProject(projectPath);
+      await configureEnv(projectPath, projectUrl, dbName);
+      await bootstrappingProject(projectPath);
     }
 
     console.log(`\nProjeto ${projectType} criado com sucesso em ${projectPath}`);
     console.log(`URL do projeto: https://${projectUrl}`);
 
+    console.log('Iniciando os containers...');
     await startContainers(projectPath, projectUrl, composeProjectName, projectType);
 
   } catch (error) {

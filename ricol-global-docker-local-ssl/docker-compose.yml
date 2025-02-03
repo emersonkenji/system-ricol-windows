@@ -34,8 +34,9 @@ services:
     ports:
       - "3306:3306"
     networks:
-      - reverse-proxy
-      - public_network
+      reverse-proxy:
+      public_network:
+        ipv4_address: 10.0.0.10
 
   phpmyadmin:
     image: phpmyadmin
