@@ -27,8 +27,6 @@ services:
     volumes:
       - './system:/var/www/html:cached'
       # - './config/php-fpm/docker-php-ext-xdebug.ini:/etc/php/8.2/fpm/conf.d/docker-php-ext-xdebug.ini:cached'
-      - '~/.ssh:/home/<USER_NAME>/.ssh:cached'
-      - '~/.aws:/home/<USER_NAME>/.aws:cached,ro'
     environment:
       - PHP_OPCACHE_VALIDATE_TIMESTAMPS=1 
       # ENABLE_XDEBUG: 'true'

@@ -74,6 +74,7 @@ const create = async () => {
 
     const projectName = projectUrl.replace(/\.(dev.localhost|dev.local|dev.test)$/, '');
     const projectPath = path.join(meusSitesPath, projectName);
+    const defaultConfPath = path.join(projectPath, '.containers');
     const composeProjectName = projectName
       .toLowerCase()
       .replace(/\./g, '-')
@@ -98,15 +99,22 @@ const create = async () => {
       // WordPress specific setup
       const dbName = `wp_${composeProjectName}`;
       const dockerComposePath = path.join(projectPath, 'docker-compose.yml');
+
       let dockerConfig = fs.readFileSync(dockerComposePath, 'utf8');
       dockerConfig = dockerConfig
-        // .replace(/WORDPRESS_DB_NAME: wordpress/, `WORDPRESS_DB_NAME: ${dbName}`)
+        .replace(/WORDPRESS_DB_NAME: wordpress/, `WORDPRESS_DB_NAME: ${dbName}`)
         .replace(/<labels>/g, composeProjectName)
         .replace(/<SITE_NAME>/g, composeProjectName)
         .replace(/<SITE_URL>/g, projectUrl)
         .replace(/<USER_NAME>/g, userName)
         .replace(/<PHP_IMAGE>/g, phpVersion);
       fs.writeFileSync(dockerComposePath, dockerConfig);
+
+      // ajusta o arquivo default.conf
+      const defaultConf = path.join(defaultConfPath, 'default.conf');
+      let defaultConfContent = fs.readFileSync(defaultConf, 'utf8');
+      defaultConfContent = defaultConfContent.replace(/<SITE_URL>/g, projectUrl);
+      fs.writeFileSync(defaultConf, defaultConfContent);
 
       // New WordPress setup steps
       await ensureWPCLI();
@@ -128,6 +136,11 @@ const create = async () => {
         .replace(/<PHP_IMAGE>/g, phpVersion);
 
       fs.writeFileSync(dockerComposePath, dockerConfig);
+      // ajusta o arquivo default.conf
+      const defaultConf = path.join(defaultConfPath, 'default.conf');
+      let defaultConfContent = fs.readFileSync(defaultConf, 'utf8');
+      defaultConfContent = defaultConfContent.replace(/<SITE_URL>/g, projectUrl);
+      fs.writeFileSync(defaultConf, defaultConfContent);
 
       // Cria a pasta system
       const systemPath = path.join(projectPath, 'system');

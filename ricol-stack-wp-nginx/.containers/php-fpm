@@ -1,25 +1,7 @@
-ARG PHP_IMAGE=php:8.3-fpm
+ARG PHP_IMAGE
 FROM ${PHP_IMAGE}
-# FROM php:8.3-fpm
-
-# ARG CALLING_USER=www-data
-# ARG CALLING_UID=1000
 
 USER root
-
-# Create user and configure permissions
-# RUN useradd ${CALLING_USER} -u ${CALLING_UID}
-# RUN mkdir -p /run/php-fpm
-# RUN chown ${CALLING_USER} /run/php-fpm
-
-# Install WP-CLI
-
-# Check files before changing ownership
-RUN [ -e /var/log/php-fpm.log ] && chown www-data /var/log/php-fpm.log || echo "Log não encontrado"
-RUN [ -e /usr/local/etc/msmtprc ] || touch /usr/local/etc/msmtprc
-RUN chown www-data /usr/local/etc/msmtprc
-RUN [ -e /etc/msmtprc ] && chown www-data /etc/msmtprc || echo "Arquivo msmtprc não encontrado"
-RUN chown -R www-data:www-data /var/www/html
 
 # Install dependencies and PHP extensions
 RUN apt-get update && apt-get install -y \
@@ -36,18 +18,9 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install \
         pdo_mysql \
         mysqli \
-        curl \
-        xml \
-        mbstring \
-        bcmath \
-        zip \
-        soap \
-        intl \
-        gd \
-        opcache \
-    && pecl install imagick \
-    && docker-php-ext-enable imagick \
-    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# USER ${CALLING_USER}
+# Basic PHP configuration
+COPY php.ini /usr/local/etc/php/conf.d/custom.ini
+
+USER www-data

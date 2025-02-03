@@ -32,6 +32,16 @@ const globalStart = async () => {
       console.log('Rede reverse-proxy criada com sucesso.');
     }
 
+    // Verifica se a rede public_network existe, se não, cria
+    try {
+      execSync('docker network inspect public_network', { stdio: 'ignore' });
+      console.log('Rede public_network já existe.');
+    } catch (error) {
+      console.log('Criando rede public_network...');
+      execSync('docker network create public_network');
+      console.log('Rede public_network criada com sucesso.');
+    }
+
     // Inicia os containers
     console.log('\nIniciando containers globais...');
     try {
