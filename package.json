@@ -1,7 +1,7 @@
 {
   "name": "system-ricol",
-  "version": "1.0.0",
-  "description": "Descrição do seu projeto",
+  "version": "1.0.1",
+  "description": "Pacote de instalação do sistema Ricol para criar ambiente de desenvolvimento local",
   "main": "index.js",
   "bin": {
     "system-ricol": "./index.js"
@@ -10,7 +10,7 @@
     "build": "rollup -c rollup.config.mjs"
   },
   "keywords": [],
-  "author": "",
+  "author": "Emerson Takada",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
@@ -21,7 +21,7 @@
   "files": [
     "ricol-global-docker-local-ssl/",
     "ricol-stack-laravel-nginx/",
-    "ricol-stack-laravel-nginx/",
+    "ricol-stack-wp-nginx/",
     "index.js",
     "src/",
     "dist/",
