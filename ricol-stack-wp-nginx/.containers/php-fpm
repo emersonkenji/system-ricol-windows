@@ -15,9 +15,23 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libmagickwand-dev \
     libicu-dev \
+    libxslt1-dev \
+    libmcrypt-dev \
+    libreadline-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
         pdo_mysql \
+        gmagick \
         mysqli \
+        bcmath \
+        exif \
+        intl \
+        zip \
+        gd \
+        soap \
+        mbstring \
+        xml \
+        opcache \
     && rm -rf /var/lib/apt/lists/*
 
 # Basic PHP configuration

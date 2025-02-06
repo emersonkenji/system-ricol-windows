@@ -71,8 +71,8 @@ async function setupWordPress(projectPath, dbName, pathSystem, url) {
         define('WP_DEBUG', true);
         define('WP_DEBUG_DISPLAY', false);
         define('WP_DEBUG_LOG', true);
-        define('AUTOMATIC_UPDATER_DISABLED', true);
-        define('WP_AUTO_UPDATE_CORE', false);
+        // define('AUTOMATIC_UPDATER_DISABLED', true);
+        // define('WP_AUTO_UPDATE_CORE', false);
         define('WP_HOME', 'https://${url}');
         define('WP_SITEURL', 'https://${url}');
         `,

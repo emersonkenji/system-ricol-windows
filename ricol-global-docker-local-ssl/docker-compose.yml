@@ -21,7 +21,7 @@ services:
       # Map the certificats into the container
       - ./certs:/etc/certs:ro
     networks:
-      - reverse-proxy
+      - sr-reverse-proxy
 
   mariadb:
     image: mariadb:10.6
@@ -30,13 +30,14 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
     volumes:
+      - ./config/mysql/config.cnf:/etc/mysql/mysql.conf.d/wp-local-docker.cnf:ro
       - mysql_data:/var/lib/mysql
     ports:
       - "3306:3306"
     networks:
-      reverse-proxy:
-      public_network:
-        ipv4_address: 10.0.0.10
+      sr-reverse-proxy:
+      sr-public_network:
+        ipv4_address: 10.0.120.10
 
   phpmyadmin:
     image: phpmyadmin
@@ -48,18 +49,19 @@ services:
     environment:
       PMA_HOST: mariadb
     networks:
-      - public_network
-      - reverse-proxy
+      - sr-public_network
+      - sr-reverse-proxy
 
 networks:
-  reverse-proxy:
+  sr-reverse-proxy:
     external: true
-  public_network:
+  sr-public_network:
     external: true
+
+volumes:
+  mysql_data:
 
 
 # comando mkcert
 # mkcert -cert-file certs/localhost-cert.pem -key-file certs/localhost-key.pem "*.docker.localhost" "*.local" "*.test"
 
-volumes:
-  mysql_data:

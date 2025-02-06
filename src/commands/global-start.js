@@ -22,24 +22,24 @@ const globalStart = async () => {
       process.exit(1);
     }
 
-    // Verifica se a rede reverse-proxy existe, se não, cria
+    // Verifica se a rede sr-reverse-proxy existe, se não, cria
     try {
-      execSync('docker network inspect reverse-proxy', { stdio: 'ignore' });
-      console.log('Rede reverse-proxy já existe.');
+      execSync('docker network inspect sr-reverse-proxy', { stdio: 'ignore' });
+      console.log('Rede sr-reverse-proxy já existe.');
     } catch (error) {
-      console.log('Criando rede reverse-proxy...');
-      execSync('docker network create reverse-proxy');
-      console.log('Rede reverse-proxy criada com sucesso.');
+      console.log('Criando rede sr-reverse-proxy...');
+      execSync('docker network create sr-reverse-proxy');
+      console.log('Rede sr-reverse-proxy criada com sucesso.');
     }
 
-    // Verifica se a rede public_network existe, se não, cria
+    // Verifica se a rede sr-sr-public_network existe, se não, cria
     try {
-      execSync('docker network inspect public_network', { stdio: 'ignore' });
-      console.log('Rede public_network já existe.');
+      execSync('docker network inspect sr-public_network', { stdio: 'ignore' });
+      console.log('Rede sr-public_network já existe.');
     } catch (error) {
-      console.log('Criando rede public_network...');
-      execSync('docker network create --subnet=10.0.0.0/24 --gateway=10.0.0.1 public_network');
-      console.log('Rede public_network criada com sucesso.');
+      console.log('Criando rede sr-public_network...');
+      execSync('docker network create --subnet=10.0.120.0/24 --gateway=10.0.120.1 sr-public_network');
+      console.log('Rede sr-public_network criada com sucesso.');
     }
 
     // Inicia os containers

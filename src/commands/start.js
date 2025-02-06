@@ -33,10 +33,10 @@ const start = async () => {
           cwd: globalPath,
           stdio: 'inherit'
         });
-
+        
         // Aguarda 10 segundos para os containers inicializarem
         console.log('\nAguardando inicialização do ambiente global...');
-        await new Promise(resolve => setTimeout(resolve, 10000));
+        await new Promise(resolve => setTimeout(resolve, 5000));
 
         // Verifica novamente o status
         const newStatus = execSync('docker ps --format "{{.Names}}"', {

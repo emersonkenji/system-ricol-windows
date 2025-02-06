@@ -80,7 +80,7 @@ async function configureEnv(projectPath, projectUrl, dbName) {
       // Configurações de banco de dados
       envContent = envContent
         .replace(/DB_CONNECTION=.*/, `DB_CONNECTION=mysql`)
-        .replace(/DB_HOST=.*/, `DB_HOST=10.0.0.10`)
+        .replace(/DB_HOST=.*/, `DB_HOST=10.0.120.10`)
         .replace(/DB_PORT=.*/, `DB_PORT=3306`)
         .replace(/DB_DATABASE=.*/, `DB_DATABASE=${dbName}`)
         .replace(/DB_USERNAME=.*/, `DB_USERNAME=laravel`)

@@ -11,7 +11,7 @@ services:
     depends_on:
       - phpfpm
     networks:
-      - reverse-proxy
+      - sr-reverse-proxy
       - <SITE_NAME>-net
     environment:
       - NGINX_HOST=<SITE_URL>
@@ -22,7 +22,7 @@ services:
       - './config/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro'
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=reverse-proxy"
+      - "traefik.docker.network=sr-reverse-proxy"
       - "traefik.http.routers.<labels>.rule=Host(`<SITE_URL>`)"
       - "traefik.http.routers.<labels>.tls=true"
       - "traefik.http.routers.<labels>.service=<labels>"
@@ -42,7 +42,7 @@ services:
     container_name: <SITE_NAME>-phpfpm
     networks:
       - <SITE_NAME>-net
-      - public_network
+      - sr-public_network
     volumes:
       - './system:/var/www/html'
       - './config/php-fpm/wp-cli.local.yml:/var/www/.wp-cli/config.yml:ro'
@@ -52,11 +52,11 @@ services:
     user: "1000:1000"
 
 networks:
-  reverse-proxy:
+  sr-reverse-proxy:
     external: true
-    name: reverse-proxy
+    name: sr-reverse-proxy
   <SITE_NAME>-net:
     driver: bridge
-  public_network:
+  sr-public_network:
     external: true
-    name: public_network
+    name: sr-public_network
