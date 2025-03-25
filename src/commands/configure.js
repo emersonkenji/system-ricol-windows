@@ -77,6 +77,16 @@ const configureEnvironment = async () => {
     setPermissions(paths.templatesDir);
     setPermissions(paths.globalDir);
 
+    // Gera os certificados usando mkcert
+    console.log('Gerando certificados SSL...');
+    execSync(
+      `cd "${paths.globalDir}" && mkcert -cert-file certs/localhost-cert.pem -key-file certs/localhost-key.pem "*.docker.localhost" "*.dev.local" "*.dev.localhost"`,
+      { stdio: 'inherit' }
+    );
+
+    console.log('Certificados SSL gerados com sucesso!');
+    console.log(`Local dos certificados: ${paths.globalDir}/certs`);
+
     // Cria as redes do Docker
     console.log('\nConfigurando redes Docker...');
     try {

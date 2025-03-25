@@ -1,6 +1,6 @@
 {
   "name": "@emersontakada/system-ricol-windows",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Pacote de instalação do sistema Ricol para criar ambiente de desenvolvimento local",
   "main": "index.js",
   "bin": {
