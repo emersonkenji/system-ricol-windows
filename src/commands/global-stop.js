@@ -1,15 +1,16 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const { getProjectPaths } = require('../utils/paths-config');
 
 const globalStop = async () => {
-  const userDir = require('os').homedir();
-  const globalPath = path.join(userDir, 'ricol-global-docker-local-ssl');
+  const paths = getProjectPaths();
+  const globalPath = paths.globalDir;
 
   try {
     // Verifica se a pasta global existe
     if (!fs.existsSync(globalPath)) {
-      console.error('Pasta ricol-global-docker-local-ssl não encontrada!');
+      console.error('Ambiente global não encontrado!');
       console.error('Execute primeiro: system-ricol config');
       process.exit(1);
     }
@@ -29,4 +30,4 @@ const globalStop = async () => {
   }
 };
 
-module.exports = globalStop; 
+module.exports = globalStop;

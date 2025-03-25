@@ -3,7 +3,7 @@ FROM ${PHP_IMAGE}
 
 USER root
 
-# Install dependencies and PHP extensions
+# Instalação de dependências
 RUN apt-get update && apt-get install -y \
     libzip-dev \
     libcurl4-openssl-dev \
@@ -18,23 +18,30 @@ RUN apt-get update && apt-get install -y \
     libxslt1-dev \
     libmcrypt-dev \
     libreadline-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install \
-        pdo_mysql \
-        gmagick \
-        mysqli \
-        bcmath \
-        exif \
-        intl \
-        zip \
-        gd \
-        soap \
-        mbstring \
-        xml \
-        opcache \
     && rm -rf /var/lib/apt/lists/*
 
-# Basic PHP configuration
+# Configuração e instalação das extensões PHP
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        bcmath \
+        exif \
+        gd \
+        intl \
+        mbstring \
+        mysqli \
+        opcache \
+        pdo_mysql \
+        soap \
+        xml \
+        zip
+
+# Instalação do ImageMagick via PECL
+RUN pecl install imagick \
+    && docker-php-ext-enable imagick
+
+# Configuração do PHP
 COPY php.ini /usr/local/etc/php/conf.d/custom.ini
+
+WORKDIR /var/www/html
 
 USER www-data

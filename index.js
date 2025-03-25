@@ -1,65 +1,31 @@
 #!/usr/bin/env node
 
-const yargs = require('yargs');
-const packageJson = require('./package.json');
+const yargs = require('yargs/yargs');
+const { hideBin } = require('yargs/helpers');
 
-// Importa os comandos
-const config = require('./src/commands/config');
-const globalStart = require('./src/commands/global-start');
-const globalStop = require('./src/commands/global-stop');
+const create = require('./src/commands/create');
 const start = require('./src/commands/start');
 const stop = require('./src/commands/stop');
-const create = require('./src/commands/create');
 const deleteProject = require('./src/commands/delete-project');
+const globalStart = require('./src/commands/global-start');
+const globalStop = require('./src/commands/global-stop');
+const configureEnvironment = require('./src/commands/configure');
 
-// Configuração do CLI
-yargs
-  .version('version', 'Exibe a versão do system-ricol', packageJson.version)
-  .alias('version', 'v')
-  .help('h')
-  .alias('h', 'help')
+yargs(hideBin(process.argv))
+  .command('create', 'Cria um novo projeto', {}, create)
+  .command('start', 'Inicia um projeto existente', {}, start)
+  .command('stop', 'Para um projeto em execução', {}, stop)
+  .command('delete', 'Deleta um projeto existente', {}, deleteProject)
+  .command('global start', 'Inicia o ambiente global', {}, globalStart) // Alterado para espaço
+  .command('global-start', 'Inicia o ambiente global', {}, globalStart) // Mantido com hífen
+  .command('global stop', 'Para o ambiente global', {}, globalStop) // Alterado para espaço
+  .command('global-stop', 'Para o ambiente global', {}, globalStop) // Mantido com hífen
+  .command('config', 'Configura o ambiente', {}, configureEnvironment)
   .command({
-    command: 'config',
-    desc: 'Configura o ambiente',
-    handler: config
+    command: 'migrate',
+    desc: 'Migra a estrutura antiga para a nova',
+    handler: require('./src/commands/migrate')
   })
-  .command({
-    command: 'global <action>',
-    desc: 'Gerencia o ambiente global',
-    builder: (yargs) => {
-      return yargs.positional('action', {
-        describe: 'Ação a ser executada (start ou stop)',
-        choices: ['start', 'stop']
-      });
-    },
-    handler: (argv) => {
-      if (argv.action === 'start') {
-        globalStart();
-      } else if (argv.action === 'stop') {
-        globalStop();
-      }
-    }
-  })
-  .command({
-    command: 'start',
-    desc: 'Inicia um projeto específico',
-    handler: start
-  })
-  .command({
-    command: 'stop',
-    desc: 'Para um projeto específico',
-    handler: stop
-  })
-  .command({
-    command: 'create',
-    desc: 'Cria um novo projeto',
-    handler: create
-  })
-  .command({
-    command: 'delete',
-    desc: 'Remove um projeto existente',
-    handler: deleteProject
-  })
+  .demandCommand(1, 'Você precisa especificar um comando')
+  .help()
   .argv;
-// ```
-// Certifique-se de que o arquivo `index.js` tenha a permissão de execução correta. Você pode fazer isso executando `chmod +x index.js`.

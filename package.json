@@ -1,13 +1,15 @@
 {
-  "name": "system-ricol",
-  "version": "1.0.2",
+  "name": "@emersontakada/system-ricol-windows",
+  "version": "1.0.0",
   "description": "Pacote de instalação do sistema Ricol para criar ambiente de desenvolvimento local",
   "main": "index.js",
   "bin": {
     "system-ricol": "./index.js"
   },
   "scripts": {
-    "build": "rollup -c rollup.config.mjs"
+    "build": "rollup -c rollup.config.mjs",
+    "postinstall": "node scripts/post-install.js",
+    "start": "node index.js"
   },
   "keywords": [],
   "author": "Emerson Takada",
@@ -25,7 +27,8 @@
     "index.js",
     "src/",
     "dist/",
-    "package.json"
+    "package.json",
+    "scripts/"
   ],
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.2",
@@ -33,5 +36,10 @@
     "@rollup/plugin-node-resolve": "^16.0.0",
     "rollup": "^4.31.0",
     "rollup-plugin-copy": "^3.5.0"
-  }
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ]
 }

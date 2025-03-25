@@ -5,7 +5,7 @@ Uma ferramenta de linha de comando para gerenciar projetos WordPress com Docker.
 ## Instalação
 
 ```bash
-npm install -g system-ricol
+npm install -g @emersonkenji/system-ricol-windows
 ```
 
 ## Pré-requisitos

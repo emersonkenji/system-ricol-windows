@@ -2,30 +2,53 @@ const inquirer = require('inquirer');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const { startContainers, createLaravelDatabase, createWordpressDatabase } = require('../utils/ensureGlobalEnvironment');
-const { ensureWPCLI, setupWordPress } = require('../utils/wp-cli');
+const { startContainers } = require('../utils/ensureGlobalEnvironment');
+const { createLaravelDatabase, createWordpressDatabase } = require('../utils/db-installer');
+const { ensureWPCLI } = require('../utils/wp-cli-installer');
+const { setupWordPress } = require('../utils/wp-cli');
 const { configureLaravelProject, configureEnv, bootstrappingProject } = require('../utils/laravel-installer');
+const { detectOS, getHomeDir, normalizeSlashes } = require('../utils/detect-os');
+const { copyDirectory, setPermissions } = require('../utils/file-operations');
+const { getProjectPaths } = require('../utils/paths-config');
+const { getUserName } = require('../utils/user-info');
+const { createEnvFile } = require('../utils/env-utils');
 
 const create = async () => {
-  const userDir = require('os').homedir();
-  const meusSitesPath = path.join(userDir, 'meus-sites');
-  const wpTemplatePath = path.join(__dirname, '../../ricol-stack-wp-nginx');
-  const laravelTemplatePath = path.join(__dirname, '../../ricol-stack-laravel-nginx');
+  const paths = getProjectPaths();
+  const projectsPath = paths.projectsDir;
+  const userName = getUserName();
+
+  const os = detectOS();
+  const homeDir = getHomeDir();
+
+  // Ajusta os caminhos base dependendo do SO
+  const basePath = os === 'windows'
+    ? normalizeSlashes(path.join(process.env.APPDATA, 'system-ricol'))
+    : normalizeSlashes(path.join(homeDir, '.system-ricol'));
+
+  // Ajusta os caminhos do template
+  const wpTemplatePath = path.join(paths.templatesDir, 'wordpress');
+  const laravelTemplatePath = path.join(paths.templatesDir, 'laravel');
   const validDomains = ['.dev.localhost', '.dev.local', '.dev.test'];
-  const os = require('os');
-  const userName = os.userInfo().username;
 
   try {
-    // Existing checks...
-    if (!fs.existsSync(meusSitesPath)) {
-      fs.mkdirSync(meusSitesPath, { recursive: true });
-      console.log(`Pasta meus-sites criada em ${meusSitesPath}`);
+    // Verifica/cria diretórios necessários
+    if (!fs.existsSync(projectsPath)) {
+      fs.mkdirSync(projectsPath, { recursive: true });
+      console.log(`Pasta de projetos criada em ${projectsPath}`);
     }
 
     try {
       execSync('docker --version');
     } catch (error) {
       console.error('Docker não está instalado! Por favor, instale primeiro.');
+      process.exit(1);
+    }
+
+    // Verifica se os templates existem
+    if (!fs.existsSync(wpTemplatePath)) {
+      console.error('Templates não encontrados!');
+      console.error('Execute primeiro: system-ricol config');
       process.exit(1);
     }
 
@@ -74,10 +97,7 @@ const create = async () => {
     ]);
 
     const projectName = projectUrl.replace(/\.(dev.localhost|dev.local|dev.test)$/, '');
-    const projectPath = path.join(meusSitesPath, projectName);
-    // console.log(projectPath);
-    //   process.exit(1);
-
+    const projectPath = normalizeSlashes(path.join(projectsPath, projectName));
     const defaultConfPath = path.join(projectPath, 'config/nginx');
     const composeProjectName = projectName
       .toLowerCase()
@@ -85,26 +105,35 @@ const create = async () => {
       .replace(/[^a-z0-9-]/g, '');
 
     if (fs.existsSync(projectPath)) {
-      console.error(`Projeto ${projectName} já existe em ${meusSitesPath}`);
+      console.error(`Projeto ${projectName} já existe em ${projectsPath}`);
       process.exit(1);
     }
     const labels = `${composeProjectName}dev`;
 
     const templatePath = projectType === 'wordpress' ? wpTemplatePath : laravelTemplatePath;
 
-    console.log('Copiando template...');
+    console.log('Informações do template:');
+    console.log(`Origem: ${templatePath}`);
+    console.log(`Destino: ${projectPath}`);
 
-    execSync(`cp -r "${templatePath}" "${projectPath}"`);
-    execSync(`chmod -R 755 "${projectPath}"`);
+    try {
+      copyDirectory(templatePath, projectPath);
+    } catch (error) {
+      console.error('Falha ao copiar template:', error.message);
+      process.exit(1);
+    }
+
+    setPermissions(projectPath);
 
     if (projectType === 'wordpress') {
 
-      const envContent = `SITE_URL=${projectUrl}\nCOMPOSE_PROJECT_NAME=${composeProjectName}`;
-      fs.writeFileSync(path.join(projectPath, '.env'), envContent);
+      // const envContent = `SITE_URL=${projectUrl}\nCOMPOSE_PROJECT_NAME=${composeProjectName}`;
+      // fs.writeFileSync(path.join(projectPath, '.env'), envContent);
+      createEnvFile(projectPath, projectUrl, composeProjectName);
 
       // WordPress specific setup
       const dbName = `wp_${composeProjectName}`;
-      const dockerComposePath = path.join(projectPath, 'docker-compose.yml');
+      const dockerComposePath = normalizeSlashes(path.join(projectPath, 'docker-compose.yml'));
 
       let dockerConfig = fs.readFileSync(dockerComposePath, 'utf8');
       dockerConfig = dockerConfig
@@ -112,7 +141,7 @@ const create = async () => {
         .replace(/<labels>/g, labels)
         .replace(/<SITE_NAME>/g, composeProjectName)
         .replace(/<SITE_URL>/g, projectUrl)
-        .replace(/<USER_NAME>/g, userName)
+        .replace(/<USER_NAME>/g, userName) // Usando o userName obtido de forma segura
         .replace(/<PHP_IMAGE>/g, phpVersion);
       fs.writeFileSync(dockerComposePath, dockerConfig);
 
@@ -122,17 +151,32 @@ const create = async () => {
       defaultConfContent = defaultConfContent.replace(/<SITE_URL>/g, projectUrl);
       fs.writeFileSync(defaultConf, defaultConfContent);
 
+      // Instala WP-CLI se necessário
+      console.log('\nVerificando instalação do WP-CLI...');
+      const wpCliInstalled = await ensureWPCLI();
+      if (!wpCliInstalled) {
+        console.error('\nNão foi possível instalar o WP-CLI automaticamente.');
+        console.error('Você precisará reiniciar o terminal após a instalação.');
+        process.exit(1);
+      }
+
       // New WordPress setup steps
-      await ensureWPCLI();
       await setupWordPress(projectPath, dbName, composeProjectName, projectUrl);
       await createWordpressDatabase(dbName);
+      console.log('\nWordPress configurado com sucesso!');
+
     } else {
 
       const dbName = `laravel_${composeProjectName}`;
+      createEnvFile(projectPath, projectUrl, composeProjectName, {
+        DB_NAME: dbName,
+        DB_USER: 'laravel',
+        DB_PASS: 'laravel'
+      });
 
       // Configura o docker-compose.yml
       console.log('Configurando docker-compose.yml...');
-      const dockerComposePath = path.join(projectPath, 'docker-compose.yml');
+      const dockerComposePath = normalizeSlashes(path.join(projectPath, 'docker-compose.yml'));
       let dockerConfig = fs.readFileSync(dockerComposePath, 'utf8');
 
       // Atualiza apenas as labels do Traefik
@@ -140,12 +184,13 @@ const create = async () => {
         .replace(/<labels>/g, composeProjectName)
         .replace(/<SITE_NAME>/g, composeProjectName)
         .replace(/<SITE_URL>/g, projectUrl)
-        .replace(/<USER_NAME>/g, userName)
+        .replace(/<USER_NAME>/g, userName) // Usando o userName obtido de forma segura
         .replace(/<PHP_IMAGE>/g, phpVersion);
 
       fs.writeFileSync(dockerComposePath, dockerConfig);
 
       console.log('Configurando default.conf...');
+      
       // ajusta o arquivo default.conf
       const defaultConf = path.join(defaultConfPath, 'default.conf');
       let defaultConfContent = fs.readFileSync(defaultConf, 'utf8');
@@ -157,7 +202,7 @@ const create = async () => {
       // fs.mkdirSync(systemPath, { recursive: true });
 
       console.log('Criando banco de dados Laravel...');
-      // Cria o banco de dados para Laravel
+      // Use a nova função robusta para criar o banco de dados
       await createLaravelDatabase(dbName);
 
       // Configura o projeto Laravel

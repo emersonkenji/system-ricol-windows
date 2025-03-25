@@ -1,5 +1,3 @@
-version: '3.8'  # Adicionar versão explícita
-
 services:
 
   nginx:
@@ -32,8 +30,8 @@ services:
     
   phpfpm:
     build:
-      context: .containers
-      dockerfile: php-fpm
+      context: .containers/php-fpm
+      dockerfile: Dockerfile
       args:
         PHP_IMAGE: <PHP_IMAGE>
         CALLING_USER: <USER_NAME>

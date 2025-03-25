@@ -1,52 +1,64 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const { getProjectPaths } = require('../utils/paths-config');
 
 const config = () => {
-  const userDir = require('os').homedir();
-  const sslSourcePath = path.join(__dirname, '../../ricol-global-docker-local-ssl');
-  const sslDestPath = path.join(userDir, 'ricol-global-docker-local-ssl');
-  const meusSitesPath = path.join(userDir, 'meus-sites');
+  const paths = getProjectPaths();
+  const rootDir = path.join(__dirname, '..', '..');
+  const globalSource = path.join(rootDir, 'ricol-global-docker-local-ssl');
+  const os = detectOS();
 
   try {
     // Verifica se o mkcert está instalado
     try {
-      execSync('which mkcert');
+      if (os === 'windows') {
+        execSync('where mkcert', { stdio: 'ignore' });
+      } else {
+        execSync('which mkcert', { stdio: 'ignore' });
+      }
     } catch (error) {
-      console.error('mkcert não está instalado! Por favor, instale primeiro:');
-      console.error('sudo apt install mkcert');
+      console.error('mkcert não está instalado! Por favor, instale:');
+      if (os === 'windows') {
+        console.log('choco install mkcert');
+      } else {
+        console.log('Linux: apt install mkcert');
+        console.log('Mac: brew install mkcert');
+      }
       process.exit(1);
     }
 
-    // Copia a pasta ricol-global-docker-local-ssl completa
-    if (!fs.existsSync(sslDestPath)) {
+    // Copia a pasta global
+    if (!fs.existsSync(paths.globalDir)) {
       console.log('Copiando pasta global...');
-      execSync(`cp -r "${sslSourcePath}" "${sslDestPath}"`, { stdio: 'inherit' });
-      console.log(`Pasta global copiada para ${sslDestPath}`);
+      fs.cpSync(globalSource, paths.globalDir, { recursive: true });
+      console.log(`Pasta global copiada para ${paths.globalDir}`);
     } else {
-      console.log(`A pasta global já existe em ${sslDestPath}`);
+      console.log(`A pasta global já existe em ${paths.globalDir}`);
     }
 
-    // Cria a pasta meus-sites
-    if (!fs.existsSync(meusSitesPath)) {
-      fs.mkdirSync(meusSitesPath, { recursive: true });
-      console.log(`Pasta meus-sites criada em ${meusSitesPath}`);
+    // Cria a pasta de projetos
+    if (!fs.existsSync(paths.projectsDir)) {
+      fs.mkdirSync(paths.projectsDir, { recursive: true });
+      console.log(`Pasta de projetos criada em ${paths.projectsDir}`);
     } else {
-      console.log(`A pasta meus-sites já existe em ${meusSitesPath}`);
+      console.log(`A pasta de projetos já existe em ${paths.projectsDir}`);
     }
 
     // Cria a pasta certs dentro do diretório SSL
-    const certsPath = path.join(sslDestPath, 'certs');
+    const certsPath = path.join(paths.globalDir, 'certs');
     if (!fs.existsSync(certsPath)) {
       fs.mkdirSync(certsPath, { recursive: true });
     }
 
     // Gera os certificados usando mkcert
     console.log('Gerando certificados SSL...');
+    process.chdir(paths.globalDir);
     execSync(
-      `cd "${sslDestPath}" && mkcert -cert-file certs/localhost-cert.pem -key-file certs/localhost-key.pem "*.docker.localhost" "*.dev.local" "*.dev.localhost"`,
+      'mkcert -cert-file certs/localhost-cert.pem -key-file certs/localhost-key.pem "*.docker.localhost" "*.dev.local" "*.dev.localhost"',
       { stdio: 'inherit' }
     );
+    process.chdir(__dirname);
 
     console.log('Certificados SSL gerados com sucesso!');
     console.log(`Local dos certificados: ${certsPath}`);
@@ -57,4 +69,4 @@ const config = () => {
   }
 };
 
-module.exports = config; 
+module.exports = config;

@@ -3,11 +3,47 @@ const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const { ensureLaravelInstalled } = require('./laravel-cli-installer');
+const { detectOS } = require('./detect-os');
+
+// Função para verificar a presença do Composer
+function ensureComposer() {
+  const os = detectOS();
+  
+  try {
+    const command = os === 'windows' ? 'composer --version' : 'composer --version';
+    execSync(command, { stdio: 'ignore' });
+    return true;
+  } catch (error) {
+    console.warn('Composer não encontrado. Tentando instalar...');
+    
+    try {
+      if (os === 'windows') {
+        console.log('Por favor, baixe e instale o Composer manualmente:');
+        console.log('https://getcomposer.org/download/');
+        return false;
+      } else {
+        // Instalação no Linux
+        execSync('curl -sS https://getcomposer.org/installer | php', { stdio: 'inherit' });
+        execSync('sudo mv composer.phar /usr/local/bin/composer', { stdio: 'inherit' });
+        execSync('chmod +x /usr/local/bin/composer', { stdio: 'inherit' });
+        return true;
+      }
+    } catch (error) {
+      console.error('Erro ao instalar o Composer:', error.message);
+      return false;
+    }
+  }
+}
 
 async function configureLaravelProject(projectPath) {
     const projectName = path.basename(projectPath);
     const options = await getProjectOptions();
     const execPermissionsPath = path.join(projectPath, 'laravel');
+
+    // Verifica se o Composer está instalado
+    if (!ensureComposer()) {
+        throw new Error('Composer não está instalado. Por favor, instale o Composer primeiro.');
+    }
 
     const laravelInstalled = await ensureLaravelInstalled();
 
@@ -31,18 +67,34 @@ async function configureLaravelProject(projectPath) {
 
         // Após a criação do Laravel, configurando permissões
         console.log('Configurando permissões para a pasta do Laravel...');
+        const os = detectOS();
         
-        // Definindo permissões para as pastas de storage e cache
-        execSync(`chmod -R 775 ${execPermissionsPath}/storage ${execPermissionsPath}/bootstrap/cache`, {
-            stdio: 'inherit'
-        });
-
-        // Garantir que o servidor web tenha permissão para escrever
-        // execSync(`chown -R www-data:www-data ${execPermissionsPath}/storage ${execPermissionsPath}/bootstrap/cache`, {
-        //     stdio: 'inherit'
-        // });
-
-        console.log('Permissões configuradas com sucesso!');
+        if (os === 'windows') {
+            // No Windows, podemos usar o comando icacls para definir permissões
+            try {
+                const storagePath = path.join(execPermissionsPath, 'storage');
+                const cachePath = path.join(execPermissionsPath, 'bootstrap', 'cache');
+                
+                // Verifica se os diretórios existem
+                if (fs.existsSync(storagePath)) {
+                    execSync(`icacls "${storagePath}" /grant Everyone:F /T`, { stdio: 'ignore' });
+                }
+                
+                if (fs.existsSync(cachePath)) {
+                    execSync(`icacls "${cachePath}" /grant Everyone:F /T`, { stdio: 'ignore' });
+                }
+                
+                console.log('Permissões configuradas com sucesso!');
+            } catch (error) {
+                console.warn('Aviso: Não foi possível definir permissões:', error.message);
+            }
+        } else {
+            // No Linux/Mac, usa chmod
+            execSync(`chmod -R 775 "${execPermissionsPath}/storage" "${execPermissionsPath}/bootstrap/cache"`, {
+                stdio: 'inherit'
+            });
+            console.log('Permissões configuradas com sucesso!');
+        }
     } catch (error) {
         console.error('Erro ao criar projeto Laravel:', error.message);
         throw error;
@@ -51,14 +103,51 @@ async function configureLaravelProject(projectPath) {
 
 async function bootstrappingProject(projectPath) {
     const bootstrappingPath = path.join(projectPath, 'laravel');
+    const os = detectOS();
 
     try {
         console.log(`Executando: provisionamento do projeto Laravel`);
         
-        execSync(`npm install && npm run build && php artisan migrate`, {
-            cwd: bootstrappingPath,
-            stdio: 'inherit'
-        });
+        if (os === 'windows') {
+            // No Windows, é melhor executar comandos separados para evitar problemas
+            console.log('Instalando dependências do Node...');
+            try {
+                execSync(`npm install`, {
+                    cwd: bootstrappingPath,
+                    stdio: 'inherit'
+                });
+            } catch (error) {
+                console.warn('Aviso: Erro ao instalar dependências do Node:', error.message);
+            }
+            
+            console.log('Compilando assets...');
+            try {
+                execSync(`npm run build`, {
+                    cwd: bootstrappingPath,
+                    stdio: 'inherit'
+                });
+            } catch (error) {
+                console.warn('Aviso: Erro ao compilar assets:', error.message);
+            }
+            
+            console.log('Executando migrações...');
+            try {
+                execSync(`php artisan migrate`, {
+                    cwd: bootstrappingPath,
+                    stdio: 'inherit'
+                });
+            } catch (error) {
+                console.warn('Aviso: Erro ao executar migrações:', error.message);
+            }
+        } else {
+            // No Linux, podemos executar comandos encadeados
+            execSync(`npm install && npm run build && php artisan migrate`, {
+                cwd: bootstrappingPath,
+                stdio: 'inherit'
+            });
+        }
+        
+        console.log('Provisionamento concluído com sucesso!');
     } catch (error) {
         console.error('Erro ao execultar provisionamento do projeto Laravel:', error.message);
         throw error;
@@ -228,7 +317,7 @@ function constructLaravelCommand(projectName, options) {
     return `${projectName} ${options.join(' ')} --no-interaction`;
 }
 
-module.exports = { configureLaravelProject, configureEnv, bootstrappingProject };
+module.exports = { configureLaravelProject, configureEnv, bootstrappingProject, ensureComposer };
 
 
 

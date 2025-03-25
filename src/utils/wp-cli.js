@@ -1,6 +1,7 @@
 const path = require('path');
 const { execSync } = require('child_process');
 const fs = require('fs');
+const { getProjectPaths } = require('./paths-config');
 
 // New function to check and install WP-CLI
 async function ensureWPCLI() {
@@ -11,13 +12,14 @@ async function ensureWPCLI() {
   } catch (error) {
     console.log('WP-CLI não encontrado. Instalando...');
     try {
-      // Download WP-CLI
-      execSync('curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar');
-      // Make it executable
-      execSync('chmod +x wp-cli.phar');
-      // Move to PATH
-      execSync('sudo mv wp-cli.phar /usr/local/bin/wp');
-      console.log('WP-CLI instalado com sucesso!');
+      // For Windows, we'll guide the user to manual installation
+      console.log('Para instalar o WP-CLI no Windows:');
+      console.log('1. Baixe o arquivo wp-cli.phar de https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar');
+      console.log('2. Crie um arquivo wp.bat na pasta C:\\Windows com o seguinte conteúdo:');
+      console.log('@ECHO OFF\r\nphp "%~dp0wp-cli.phar" %*');
+      console.log('3. Mova o wp-cli.phar para C:\\Windows');
+      console.log('\nPor favor, instale o WP-CLI manualmente e tente novamente.');
+      process.exit(1);
     } catch (installError) {
       throw new Error(`Erro ao instalar WP-CLI: ${installError.message}`);
     }
@@ -25,71 +27,55 @@ async function ensureWPCLI() {
 }
 
 // New function to set up WordPress
-async function setupWordPress(projectPath, dbName, pathSystem, url) {
-  console.log('\nConfigurando WordPress...');
+async function setupWordPress(projectPath, dbName, projectName, siteUrl) {
+  const paths = getProjectPaths();
   const systemPath = path.join(projectPath, 'system');
+  const safeDbName = dbName.replace(/[^a-zA-Z0-9_]/g, '');
   const parentPath = path.dirname(projectPath);
 
-  const generateRandomPrefix = () => {
-    const letters = 'abcdefghijklmnopqrstuvwxyz';
-    let result = '';
-    for (let i = 0; i < 5; i++) {
-      result += letters.charAt(Math.floor(Math.random() * letters.length));
-    }
-    return result;
-  }
-  
-  // Então no seu código do wp config:
-  const tablePrefix = generateRandomPrefix();
-
-
   try {
-    // Create system directory if it doesn't exist
+    console.log('\nConfigurando WordPress...');
+
+    // Garante que o diretório system existe
     if (!fs.existsSync(systemPath)) {
       fs.mkdirSync(systemPath, { recursive: true });
     }
 
-    // Download WordPress core
+    // Define variáveis de ambiente para o PHP
+    const env = {
+      ...process.env,
+      PHP_INI_SCAN_DIR: '',
+      PHPRC: path.join(paths.binDir, 'php.ini')
+    };
+
     console.log('Baixando WordPress...');
-    execSync(`wp core download --path=${pathSystem}/system --locale=pt_BR`, {
-      cwd: parentPath
+    execSync(`wp core download --path="${systemPath}" --locale=pt_BR`, {
+      stdio: 'inherit',
+      env
     });
 
     // Create wp-config.php
     console.log('Criando wp-config.php...');
     execSync(
-      `wp config create --path=${pathSystem}/system \
-          --dbname=${dbName} \
-          --dbuser=root \
-          --dbpass=root \
-          --dbhost=global-mariadb \
-          --dbcharset=utf8mb4 \
-          --dbcollate=utf8mb4_unicode_ci \
-          --dbprefix=${tablePrefix}_wp_ \
-          --skip-check \
-          --extra-php <<PHP
-        define('WP_DEBUG', true);
-        define('WP_DEBUG_DISPLAY', false);
-        define('WP_DEBUG_LOG', true);
-        // define('AUTOMATIC_UPDATER_DISABLED', true);
-        // define('WP_AUTO_UPDATE_CORE', false);
-        define('WP_HOME', 'https://${url}');
-        define('WP_SITEURL', 'https://${url}');
-        `,
+      `wp config create --path="${systemPath}" \
+        --dbname=${safeDbName} \
+        --dbuser=root \
+        --dbpass=root \
+        --dbhost=global-mariadb \
+        --dbcharset=utf8mb4 \
+        --dbcollate=utf8mb4_unicode_ci \
+        --dbprefix=wp_ \
+        --skip-check`,
       {
-        cwd: parentPath
+        stdio: 'inherit',
+        env
       }
     );
 
-    // Set correct permissions
-    // console.log('Aplicando permissões...');
-    // execSync(`chmod -R 755 ${systemPath}`);
-    // execSync(`find ${systemPath} -type f -exec chmod 644 {} \\;`);
-    // execSync(`find ${systemPath} -type d -exec chmod 755 {} \\;`);
-
-    console.log('WordPress configurado com sucesso!');
+    // ...rest of WordPress setup code...
   } catch (error) {
-    throw new Error(`Erro na configuração do WordPress: ${error.message}`);
+    console.error('Erro na configuração do WordPress:', error.message);
+    throw error;
   }
 }
 
